@@ -8,14 +8,6 @@ describe('07 - Product Detail | Ürün Detay', () => {
     // TODO: URL ürün slug'ına dönmeli, "Sepete Ekle" buton görünmeli
   });
 
-  it('TC-7.2 — Ürün adı, fiyatı ve görselinin gösterimi', () => {
-    // TODO: h1 / başlık, TL geçen fiyat metni, img.src boş olmamalı
-  });
-
-  it('TC-7.3 — Ürün açıklamasının görünmesi', () => {
-    // TODO: Açıklama/detay sekmesi/section render olmalı
-  });
-
   it('TC-7.4 — Aroma / varyant seçimi (varsa)', () => {
     // TODO: Varyant butonları varsa birini seç, aktifleştiğini doğrula
   });
