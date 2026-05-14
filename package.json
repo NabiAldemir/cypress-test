@@ -1,0 +1,22 @@
+{
+  "name": "proteinocean-cypress-tests",
+  "version": "1.0.0",
+  "description": "Cypress E2E test suite for https://proteinocean.com",
+  "private": true,
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test": "cypress run",
+    "test:login": "cypress run --spec cypress/e2e/01-login.cy.js",
+    "test:register": "cypress run --spec cypress/e2e/02-register.cy.js",
+    "test:homepage": "cypress run --spec cypress/e2e/03-homepage.cy.js",
+    "test:navigation": "cypress run --spec cypress/e2e/04-navigation.cy.js",
+    "test:search": "cypress run --spec cypress/e2e/05-search.cy.js",
+    "test:product-listing": "cypress run --spec cypress/e2e/06-product-listing.cy.js",
+    "test:product-detail": "cypress run --spec cypress/e2e/07-product-detail.cy.js",
+    "test:cart": "cypress run --spec cypress/e2e/08-cart.cy.js"
+  },
+  "devDependencies": {
+    "cypress": "^13.15.0"
+  }
+}
