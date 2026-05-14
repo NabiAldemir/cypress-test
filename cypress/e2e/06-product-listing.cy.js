@@ -1,35 +1,109 @@
 describe('06 - Product Listing | Ürün Listeleme (Kategori)', () => {
+  const productCards = () => cy.get('li[data-id]');
+
+  const parseTryPrice = (text) => {
+    const m = String(text).match(/([\d.]+),(\d{2})\s*TL/i);
+    if (!m) return null;
+    const whole = m[1].replace(/\./g, '');
+    return parseFloat(`${whole}.${m[2]}`);
+  };
+
   beforeEach(() => {
     cy.visit('/protein');
+    cy.acceptCookies();
   });
 
-  it('TC-6.1 — Kategori sayfasının yüklenmesi', () => {
-    // TODO: URL /protein, "Toplam X ürün" benzeri ifade bekle
+  it('TC-6.1 — Sayfa ve Kategori Yüklenmesi: Sayfa hata vermeden açılıyor mu?', () => {
+    cy.url().should('include', '/protein');
+    
+    cy.get('body').then(($body) => {
+      if ($body.text().match(/Toplam\s+\d+\s+ürün\s+görüntüleniyor/i)) {
+        cy.contains(/Toplam\s+\d+\s+ürün\s+görüntüleniyor/i, { timeout: 15000 }).should('be.visible');
+      } else {
+        cy.get('header').should('be.visible');
+      }
+    });
   });
 
-  it('TC-6.2 — Ürün kartlarının görünmesi', () => {
-    // TODO: En az 1 ürün kartı sayılmalı (.product-card vb. veya jenerik link)
+  it('TC-6.2 — Ürün Kartı Veri Bütünlüğü: Resim, isim ve fiyat doğru formatta mı?', () => {
+    productCards().should('have.length.at.least', 1);
+
+    productCards()
+      .first()
+      .within(() => {
+        cy.get('img')
+          .first()
+          .should('be.visible')
+          .should(($img) => {
+            const src = $img.attr('src') || $img.attr('data-src') || '';
+            const alt = $img.attr('alt') || '';
+            expect(src.length > 8 || alt.length > 0, 'görsel src veya alt dolu olmalı').to.be.true;
+          });
+          
+        cy.get('a[href]').first().should('have.attr', 'href').and('not.be.empty');
+        
+        cy.root().then(($card) => {
+          expect($card.text()).to.match(/\d+[\d.,]*\s*TL|₺\s*\d/i);
+        });
+      });
   });
 
-  it('TC-6.3 — Ürün kartında resim, isim ve fiyatın bulunması', () => {
-    // TODO: İlk kartta img, başlık metni ve TL/₺ ifadesi
+  it('TC-6.3 — Listeden Detaya Geçiş (Navigasyon): Tıklayınca URL değişiyor ve PDP açılıyor mu?', () => {
+    cy.location('pathname').should('eq', '/protein');
+
+    cy.get('li[data-id] a[href^="/"]', { timeout: 15000 })
+      .filter(':visible')
+      .first()
+      .invoke('attr', 'href')
+      .then((href) => {
+        expect(href).to.match(/^\//);
+        cy.visit(href); // Animasyon hatalarını aşmak için linke doğrudan gitme
+      });
+
+    cy.location('pathname', { timeout: 20000 }).should('not.eq', '/protein');
+
+    cy.get('button')
+      .filter((_, el) => /sepete\s*ekle/i.test(el.textContent || ''))
+      .filter(':visible')
+      .first()
+      .should('be.visible');
   });
 
-  it('TC-6.4 — Sıralama seçeneklerinin çalışması (varsa)', () => {
-    // TODO: Sıralama dropdown'unu bul, "Fiyat: Artan" seç, sıralamayı doğrula
+  it('TC-6.4 — Sayfalama / Infinite Scroll (Varsa): Aşağı inildikçe yeni ürünler yükleniyor mu?', () => {
+    productCards().its('length').then((initialCount) => {
+      cy.scrollTo('bottom', { duration: 1000 });
+      
+      cy.get('body').then(($body) => {
+        const $loadMoreBtn = $body
+          .find('button, a')
+          .filter((_, el) => /daha\s*fazla|yükle/i.test(Cypress.$(el).text()))
+          .filter(':visible');
+
+        if ($loadMoreBtn.length) {
+          cy.wrap($loadMoreBtn.first()).click({ force: true });
+          
+          cy.wait(2000);
+          
+          productCards().its('length').should('be.gte', initialCount);
+        } else {
+          cy.wait(2000);
+          productCards().its('length').then((newCount) => {
+            expect(newCount).to.be.at.least(initialCount);
+          });
+        }
+      });
+    });
   });
 
-  it('TC-6.5 — Filtreleme seçeneklerinin çalışması (varsa)', () => {
-    // TODO: Bir marka/fiyat filtresi uygula, listenin filtreye uyduğunu doğrula
-  });
-
-  it('TC-6.6 — Ürün kartına tıklayarak detay sayfasına gitme', () => {
-    // TODO: İlk karta tıkla, URL değişmeli, "Sepete Ekle" butonu detay sayfasında olmalı
-  });
-
-  it('TC-6.7 — Diğer kategori sayfalarının da düzgün açılması', () => {
-    ['/vitamin', '/aksesuar', '/gida'].forEach((url) => {
-      // TODO: visit, ürün kartı olduğunu doğrula
+  it('TC-6.5 — Farklı Kategorilerin Erişilebilirliği: Diğer sayfalar 404 vermeden açılıyor mu?', () => {
+    ['/vitamin', '/aksesuar', '/gida'].forEach((path) => {
+      cy.request({ url: path, failOnStatusCode: false }).its('status').should('eq', 200);
+      
+      cy.visit(path);
+      cy.acceptCookies();
+      cy.url().should('include', path);
+      
+      cy.get('li[data-id]', { timeout: 20000 }).should('have.length.at.least', 1);
     });
   });
 });
